@@ -1,0 +1,25 @@
+{
+    "name": "langgraph-ts-example",
+    "type": "module",
+    "scripts": {
+        "dev": "tsx server.ts",
+        "cli": "tsx cli.ts",
+        "prd": "tsx run-prd.ts",
+        "prd:read": "tsx run-prd-read.ts",
+        "prd:write": "tsx run-prd-write.ts"
+    },
+    "dependencies": {
+        "@inquirer/prompts": "^8.3.0",
+        "@langchain/core": "^0.3.0",
+        "@langchain/langgraph": "^0.2.0",
+        "@langchain/openai": "^0.3.0",
+        "@notionhq/client": "^2.0.0",
+        "dotenv": "^16.0.0",
+        "express": "^5.2.1",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "tsx": "^4.0.0",
+        "typescript": "^5.0.0"
+    }
+}

@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LangGraph PRD Manager</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #222;
+      padding-bottom: 0;
+    }
+    .tab {
+      padding: 10px 20px;
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 14px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: #aaa; }
+    .tab.active {
+      color: #fff;
+      border-bottom-color: #3b82f6;
+    }
+
+    /* Panels */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* PRD List */
+    .prd-list { display: flex; flex-direction: column; gap: 12px; }
+    .prd-card {
+      background: #1a1a1a;
+      border: 1px solid #262626;
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .prd-card:hover {
+      border-color: #3b82f6;
+      background: #1e1e1e;
+    }
+    .prd-card h3 {
+      font-size: 16px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    .prd-card p {
+      font-size: 13px;
+      color: #888;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Forms */
+    .form-group { margin-bottom: 16px; }
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 8px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 12px 16px;
+      background: #1a1a1a;
+      border: 1px solid #262626;
+      border-radius: 8px;
+      color: #e0e0e0;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus, textarea:focus {
+      border-color: #3b82f6;
+    }
+    textarea { min-height: 120px; resize: vertical; }
+
+    .btn {
+      padding: 10px 24px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #2563eb; }
+    .btn:disabled {
+      background: #333;
+      color: #666;
+      cursor: not-allowed;
+    }
+    .btn-secondary {
+      background: #262626;
+      color: #ccc;
+    }
+    .btn-secondary:hover { background: #333; }
+    .btn-jira {
+      background: #0052cc;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 6px;
+    }
+    .btn-jira:hover { background: #0747a6; }
+
+    .prd-card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .badge-success { background: #064e3b; color: #6ee7b7; }
+    .jira-issue-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .jira-issue {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      background: #111;
+      border: 1px solid #262626;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+    .jira-issue a {
+      color: #60a5fa;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    .jira-issue a:hover { text-decoration: underline; }
+
+    /* Result */
+    .result {
+      margin-top: 20px;
+      padding: 20px;
+      background: #1a1a1a;
+      border: 1px solid #262626;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    /* Loading */
+    .loading {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #888;
+      font-size: 14px;
+    }
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid #333;
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty {
+      text-align: center;
+      color: #555;
+      padding: 60px 0;
+      font-size: 14px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: #1a1a1a;
+      border: 1px solid #262626;
+      border-radius: 16px;
+      padding: 32px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal h2 {
+      font-size: 18px;
+      margin-bottom: 16px;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+    /* Settings */
+    .settings-group {
+      margin-bottom: 24px;
+    }
+    .settings-group-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #222;
+    }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .setting-label {
+      font-size: 13px;
+      color: #aaa;
+      min-width: 160px;
+      flex-shrink: 0;
+    }
+    .setting-input {
+      flex: 1;
+    }
+    .setting-input input {
+      width: 100%;
+      padding: 8px 12px;
+      background: #111;
+      border: 1px solid #262626;
+      border-radius: 6px;
+      color: #e0e0e0;
+      font-size: 13px;
+      font-family: monospace;
+      outline: none;
+    }
+    .setting-input input:focus { border-color: #3b82f6; }
+    .setting-input input::placeholder { color: #444; }
+    .setting-status {
+      font-size: 11px;
+      min-width: 40px;
+      text-align: center;
+    }
+    .dot-set { color: #6ee7b7; }
+    .dot-empty { color: #666; }
+    .settings-footer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #222;
+    }
+    .settings-msg {
+      font-size: 13px;
+      color: #6ee7b7;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .settings-msg.show { opacity: 1; }
+    .settings-note {
+      font-size: 12px;
+      color: #555;
+      margin-top: 8px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>LangGraph PRD Manager</h1>
+    <p class="subtitle">Notion + AI 기반 PRD 관리 도구</p>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="list">PRD 목록</button>
+      <button class="tab" data-tab="write">새 PRD 작성</button>
+      <button class="tab" data-tab="chat">AI 질문</button>
+      <button class="tab" data-tab="settings" style="margin-left:auto;">설정</button>
+    </div>
+
+    <!-- PRD 목록 -->
+    <div id="panel-list" class="panel active">
+      <div id="prd-list" class="prd-list">
+        <div class="loading"><div class="spinner"></div> PRD를 불러오는 중...</div>
+      </div>
+    </div>
+
+    <!-- PRD 작성 -->
+    <div id="panel-write" class="panel">
+      <div class="form-group">
+        <label>어떤 PRD를 작성할까요?</label>
+        <input type="text" id="write-topic" placeholder="예: AI 기반 추천 시스템, 결제 프로세스 개선 등" />
+      </div>
+      <button class="btn" id="write-btn">PRD 생성</button>
+      <div id="write-result"></div>
+    </div>
+
+    <!-- AI 질문 -->
+    <div id="panel-chat" class="panel">
+      <div class="form-group">
+        <label>무엇이든 물어보세요</label>
+        <input type="text" id="chat-input" placeholder="질문을 입력하세요..." />
+      </div>
+      <button class="btn" id="chat-btn">질문하기</button>
+      <div id="chat-result"></div>
+    </div>
+
+    <!-- 설정 -->
+    <div id="panel-settings" class="panel">
+      <div id="settings-container"></div>
+      <div class="settings-footer">
+        <button class="btn" id="settings-save">저장</button>
+        <span class="settings-msg" id="settings-msg">저장되었습니다. 서버를 재시작하면 적용됩니다.</span>
+      </div>
+      <p class="settings-note">
+        비어있는 항목에만 새 값을 입력하세요. 기존 값을 변경하려면 새 값을 입력하면 덮어씁니다.<br>
+        빈 칸으로 두면 기존 값이 유지됩니다.
+      </p>
+    </div>
+  </div>
+
+  <!-- 수정 모달 -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal">
+      <h2 id="edit-title"></h2>
+      <div id="edit-content" class="result" style="margin-top:0; margin-bottom:16px; max-height:300px; overflow-y:auto;"></div>
+      <div class="form-group">
+        <label>어떻게 수정할까요?</label>
+        <textarea id="edit-instruction" placeholder="수정할 내용을 입력하세요..."></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="edit-cancel">취소</button>
+        <button class="btn" id="edit-submit">수정하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JIRA 모달 -->
+  <div class="modal-overlay" id="jira-modal">
+    <div class="modal">
+      <h2>JIRA 이슈 생성</h2>
+      <p style="color:#888; font-size:13px; margin-bottom:16px;">이 PRD를 기반으로 JIRA 이슈 티켓을 자동 생성합니다.</p>
+      <div class="result" style="margin-top:0; margin-bottom:16px; max-height:200px; overflow-y:auto;">
+        <strong id="jira-prd-title"></strong>
+        <p id="jira-prd-preview" style="margin-top:8px; color:#888; font-size:13px;"></p>
+      </div>
+      <div id="jira-result"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="jira-cancel">닫기</button>
+        <button class="btn btn-jira" id="jira-submit">이슈 생성하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      });
+    });
+
+    // Load PRD list
+    async function loadPrds() {
+      const container = document.getElementById('prd-list');
+      container.innerHTML = '<div class="loading"><div class="spinner"></div> PRD를 불러오는 중...</div>';
+
+      try {
+        const res = await fetch('/api/prd');
+        const pages = await res.json();
+
+        if (pages.length === 0) {
+          container.innerHTML = '<div class="empty">아직 PRD가 없습니다. 새 PRD를 작성해보세요!</div>';
+          return;
+        }
+
+        container.innerHTML = pages.map(p => `
+          <div class="prd-card" data-id="${p.id}" data-title="${p.title}" data-content="${(p.content || '').replace(/"/g, '&quot;')}">
+            <h3>${p.title || '제목 없음'}</h3>
+            <p>${p.content || '(내용 없음)'}</p>
+            <div class="prd-card-actions">
+              <button class="btn btn-secondary edit-btn" style="font-size:12px; padding:6px 14px; border-radius:6px;">수정</button>
+              <button class="btn btn-jira jira-btn">JIRA 이슈 생성</button>
+            </div>
+          </div>
+        `).join('');
+
+        container.querySelectorAll('.edit-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = btn.closest('.prd-card');
+            openEditModal(card.dataset.id, card.dataset.title, card.dataset.content);
+          });
+        });
+
+        container.querySelectorAll('.jira-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const card = btn.closest('.prd-card');
+            openJiraModal(card.dataset.title, card.dataset.content);
+          });
+        });
+      } catch (err) {
+        container.innerHTML = '<div class="empty">불러오기 실패: ' + err.message + '</div>';
+      }
+    }
+
+    // Write PRD
+    document.getElementById('write-btn').addEventListener('click', async () => {
+      const topic = document.getElementById('write-topic').value.trim();
+      if (!topic) return;
+
+      const btn = document.getElementById('write-btn');
+      const resultDiv = document.getElementById('write-result');
+      btn.disabled = true;
+      resultDiv.innerHTML = '<div class="result"><div class="loading"><div class="spinner"></div> PRD 작성 중...</div></div>';
+
+      try {
+        const res = await fetch('/api/prd', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic }),
+        });
+        const data = await res.json();
+        resultDiv.innerHTML = '<div class="result">' + data.result + '</div>';
+        document.getElementById('write-topic').value = '';
+        loadPrds();
+      } catch (err) {
+        resultDiv.innerHTML = '<div class="result">오류: ' + err.message + '</div>';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Edit modal
+    let editPageId = null;
+
+    function openEditModal(id, title, content) {
+      editPageId = id;
+      document.getElementById('edit-title').textContent = title;
+      document.getElementById('edit-content').textContent = content || '(내용 없음)';
+      document.getElementById('edit-instruction').value = '';
+      document.getElementById('edit-modal').classList.add('active');
+    }
+
+    document.getElementById('edit-cancel').addEventListener('click', () => {
+      document.getElementById('edit-modal').classList.remove('active');
+    });
+
+    document.getElementById('edit-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) {
+        e.currentTarget.classList.remove('active');
+      }
+    });
+
+    document.getElementById('edit-submit').addEventListener('click', async () => {
+      const instruction = document.getElementById('edit-instruction').value.trim();
+      if (!instruction) return;
+
+      const btn = document.getElementById('edit-submit');
+      btn.disabled = true;
+      btn.textContent = '수정 중...';
+
+      try {
+        const res = await fetch('/api/prd/' + editPageId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: document.getElementById('edit-title').textContent,
+            content: document.getElementById('edit-content').textContent,
+            instruction,
+          }),
+        });
+        const data = await res.json();
+        document.getElementById('edit-modal').classList.remove('active');
+        loadPrds();
+      } catch (err) {
+        alert('오류: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '수정하기';
+      }
+    });
+
+    // JIRA modal
+    let jiraPrdTitle = '';
+    let jiraPrdContent = '';
+
+    function openJiraModal(title, content) {
+      jiraPrdTitle = title;
+      jiraPrdContent = content;
+      document.getElementById('jira-prd-title').textContent = title;
+      document.getElementById('jira-prd-preview').textContent = (content || '(내용 없음)').slice(0, 200) + '...';
+      document.getElementById('jira-result').innerHTML = '';
+      document.getElementById('jira-submit').disabled = false;
+      document.getElementById('jira-submit').textContent = '이슈 생성하기';
+      document.getElementById('jira-modal').classList.add('active');
+    }
+
+    document.getElementById('jira-cancel').addEventListener('click', () => {
+      document.getElementById('jira-modal').classList.remove('active');
+    });
+
+    document.getElementById('jira-modal').addEventListener('click', (e) => {
+      if (e.target === e.currentTarget) e.currentTarget.classList.remove('active');
+    });
+
+    document.getElementById('jira-submit').addEventListener('click', async () => {
+      const btn = document.getElementById('jira-submit');
+      const resultDiv = document.getElementById('jira-result');
+      btn.disabled = true;
+      btn.textContent = '생성 중...';
+      resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div> AI가 이슈를 분석하고 생성 중...</div>';
+
+      try {
+        const res = await fetch('/api/jira', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prdTitle: jiraPrdTitle, prdContent: jiraPrdContent }),
+        });
+        const data = await res.json();
+
+        if (data.error) {
+          resultDiv.innerHTML = '<div class="result" style="border-color:#7f1d1d; color:#fca5a5;">' + data.error + '</div>';
+        } else {
+          resultDiv.innerHTML = '<div class="result"><span class="badge badge-success">완료</span><pre style="margin-top:8px; white-space:pre-wrap;">' + data.result + '</pre></div>';
+          btn.textContent = '완료';
+        }
+      } catch (err) {
+        resultDiv.innerHTML = '<div class="result">오류: ' + err.message + '</div>';
+      }
+    });
+
+    // Chat
+    document.getElementById('chat-btn').addEventListener('click', async () => {
+      const message = document.getElementById('chat-input').value.trim();
+      if (!message) return;
+
+      const btn = document.getElementById('chat-btn');
+      const resultDiv = document.getElementById('chat-result');
+      btn.disabled = true;
+      resultDiv.innerHTML = '<div class="result"><div class="loading"><div class="spinner"></div> 답변 생성 중...</div></div>';
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        });
+        const data = await res.json();
+        resultDiv.innerHTML = '<div class="result">' + data.result + '</div>';
+      } catch (err) {
+        resultDiv.innerHTML = '<div class="result">오류: ' + err.message + '</div>';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Enter key support
+    document.getElementById('write-topic').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('write-btn').click();
+    });
+    document.getElementById('chat-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('chat-btn').click();
+    });
+
+    // Settings
+    async function loadSettings() {
+      const container = document.getElementById('settings-container');
+      try {
+        const res = await fetch('/api/settings');
+        const settings = await res.json();
+
+        const groups = {};
+        settings.forEach(s => {
+          if (!groups[s.group]) groups[s.group] = [];
+          groups[s.group].push(s);
+        });
+
+        container.innerHTML = Object.entries(groups).map(([group, items]) => `
+          <div class="settings-group">
+            <div class="settings-group-title">${group}</div>
+            ${items.map(s => `
+              <div class="setting-row">
+                <span class="setting-label">${s.label}</span>
+                <div class="setting-input">
+                  <input type="text" id="setting-${s.key}" placeholder="${s.hasValue ? s.masked : '값을 입력하세요'}" data-key="${s.key}" />
+                </div>
+                <span class="setting-status ${s.hasValue ? 'dot-set' : 'dot-empty'}">${s.hasValue ? '설정됨' : '미설정'}</span>
+              </div>
+            `).join('')}
+          </div>
+        `).join('');
+      } catch (err) {
+        container.innerHTML = '<div class="empty">설정을 불러올 수 없습니다.</div>';
+      }
+    }
+
+    document.getElementById('settings-save').addEventListener('click', async () => {
+      const inputs = document.querySelectorAll('#settings-container input[data-key]');
+      const updates = {};
+      inputs.forEach(input => {
+        if (input.value.trim()) {
+          updates[input.dataset.key] = input.value.trim();
+        }
+      });
+
+      if (Object.keys(updates).length === 0) return;
+
+      const btn = document.getElementById('settings-save');
+      btn.disabled = true;
+
+      try {
+        await fetch('/api/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        });
+        const msg = document.getElementById('settings-msg');
+        msg.classList.add('show');
+        setTimeout(() => msg.classList.remove('show'), 3000);
+        loadSettings();
+      } catch (err) {
+        alert('저장 실패: ' + err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    // Init
+    loadPrds();
+    loadSettings();
+  </script>
+</body>
+</html>
